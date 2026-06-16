@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Perfect Portal Vortex</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #000010;
+    touch-action: none;
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+onresize = resize;
+
+let angle = 0;
+let isTouching = false;
+let tx = 0, ty = 0;
+let ripple = [];
+
+function addRipple(x, y){
+  ripple.push({ x, y, r: 5, alpha: 1 });
+}
+
+document.addEventListener("touchstart", e=>{
+  let t = e.touches[0];
+  tx = t.clientX;
+  ty = t.clientY;
+  isTouching = true;
+  addRipple(tx,ty);
+});
+document.addEventListener("touchmove", e=>{
+  let t = e.touches[0];
+  tx = t.clientX;
+  ty = t.clientY;
+  isTouching = true;
+});
+document.addEventListener("touchend", ()=> isTouching=false);
+
+document.addEventListener("mousedown", e=>{
+  tx=e.clientX;
+  ty=e.clientY;
+  isTouching=true;
+  addRipple(tx,ty);
+});
+document.addEventListener("mousemove", e=>{
+  if(isTouching){
+    tx=e.clientX;
+    ty=e.clientY;
+  }
+});
+document.addEventListener("mouseup", ()=>isTouching=false);
+
+// PERFECT CLOSED VORTEX (NO GAPS)
+function drawVortex(x, y){
+  const maxR = 400;
+  const steps = 150; // perfect closure
+
+  for(let r = 20; r < maxR; r += 15){
+    ctx.strokeStyle = `hsla(${(angle*40 + r/2) % 360},100%,60%,0.8)`;
+    ctx.lineWidth = 8;
+
+    ctx.beginPath();
+
+    for(let i = 0; i <= steps; i++){
+      let a = (i / steps) * Math.PI * 2;
+      let swirl = Math.sin(a * 4 + angle * 4) * 20;
+
+      let px = x + (r + swirl) * Math.cos(a);
+      let py = y + (r + swirl) * Math.sin(a);
+
+      if(i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+
+    ctx.closePath();  // fully closes it
+    ctx.stroke();
+  }
+}
+
+function drawRipple(){
+  ripple.forEach((r,i)=>{
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(0,150,255,${r.alpha})`;
+    ctx.lineWidth = 3;
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI*2);
+    ctx.stroke();
+
+    r.r += 3;
+    r.alpha -= 0.02;
+    if(r.alpha <= 0) ripple.splice(i,1);
+  });
+}
+
+function animate(){
+  ctx.fillStyle = "rgba(0,0,20,0.25)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  let cx = canvas.width/2;
+  let cy = canvas.height/2;
+  let x = cx;
+  let y = cy;
+
+  if(isTouching){
+    x = cx + (tx - cx) * 0.15;
+    y = cy + (ty - cy) * 0.15;
+
+    addRipple(tx,ty);
+  }
+
+  drawVortex(x,y);
+  drawRipple();
+
+  angle += 0.01;
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
